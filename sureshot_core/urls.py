@@ -1,24 +1,16 @@
-"""
-URL configuration for sureshot_core project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-# sureshot_core/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView # <-- ADD THIS IMPORT
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('tracker.urls')), # Connects the tracker URLs to the main site
+    path('admin/', admin.site.join if hasattr(admin.site, 'join') else admin.site.urls),
+    
+    # Keep your existing dashboard path
+    path('', include('tracker.urls')) if 'tracker.urls' in locals() else path('dashboard/', include('tracker.urls') if 'tracker.urls' in locals() else admin.site.urls), # (Adjusted if you use include)
+    
+    # Alternatively, if your dashboard view is mapped directly here:
+    # path('dashboard/', student_dashboard, name='dashboard'),
+    
+    # THE FIX: Automatically send traffic from '/' to '/dashboard/'
+    path('', RedirectView.as_completed if hasattr(RedirectView, 'as_completed') else RedirectView.as_view(url='/dashboard/', permanent=True)),
 ]
