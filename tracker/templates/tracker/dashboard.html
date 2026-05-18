@@ -1,0 +1,190 @@
+{% extends 'tracker/base.html' %}
+
+{% block content %}
+<div class="space-y-8">
+    
+    <!-- TOP SECTION: Profile & The Algo Shield -->
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+        
+        <!-- Profile Card -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
+            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Candidate Profile</h2>
+            <p class="text-2xl font-extrabold text-gray-900 mt-1">{{ request.user.get_full_name }}</p>
+            <p class="text-indigo-600 font-bold mt-1">Level {{ profile.target_level }} Target: {{ profile.target_exam }}</p>
+        </div>
+
+        <!-- THE SURESHOT ALGO SHIELD -->
+        {% with status=profile.get_compliance_status %}
+        <div class="md:col-span-2 overflow-hidden rounded-2xl shadow-sm border flex flex-col justify-center
+            {% if status.0 == 'GREEN' %}bg-green-50 border-green-300
+            {% elif status.0 == 'YELLOW' %}bg-yellow-50 border-yellow-400
+            {% else %}bg-red-50 border-red-300{% endif %}">
+            
+            <div class="p-6 flex items-start space-x-5">
+                <div class="flex-shrink-0 mt-1">
+                    {% if status.0 == 'GREEN' %}
+                        <i class="fa-solid fa-shield-check text-5xl text-green-500"></i>
+                    {% elif status.0 == 'YELLOW' %}
+                        <i class="fa-solid fa-triangle-exclamation text-5xl text-yellow-500"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-xmark text-5xl text-red-500"></i>
+                    {% endif %}
+                </div>
+                <div class="w-full">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-black {% if status.0 == 'GREEN' %}text-green-900{% elif status.0 == 'YELLOW' %}text-yellow-900{% else %}text-red-900{% endif %}">
+                            STATUS: {{ status.0 }}
+                        </h3>
+                        <span class="text-xs font-bold uppercase tracking-widest opacity-70 {% if status.0 == 'GREEN' %}text-green-800{% elif status.0 == 'YELLOW' %}text-yellow-800{% else %}text-red-800{% endif %}">
+                            Refund Window
+                        </span>
+                    </div>
+                    <p class="mt-2 text-sm font-medium {% if status.0 == 'GREEN' %}text-green-700{% elif status.0 == 'YELLOW' %}text-yellow-800{% else %}text-red-700{% endif %}">
+                        {{ status.1 }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+
+    <!-- MIDDLE SECTION: Operations (Live Class, Tasks, Exams) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- LEFT COL: Live Session & Pending Tasks -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- WEEKLY LIVE SESSION CARD -->
+            <div class="bg-gradient-to-br from-indigo-900 via-indigo-800 to-gray-900 rounded-2xl shadow-md border border-indigo-700 p-6 text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-indigo-500 rounded-full opacity-20 blur-2xl"></div>
+                
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <span class="bg-red-500 text-white text-[10px] font-black px-2.5 py-1 rounded-sm uppercase tracking-widest shadow-sm">
+                            <i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Upcoming Live
+                        </span>
+                        <h3 class="text-xl font-black mt-4 tracking-tight">{{ next_session.title|default:"No session scheduled yet" }}</h3>
+                        <p class="text-indigo-200 text-sm mt-1 font-medium">
+                            <i class="fa-regular fa-calendar mr-1.5"></i> {% if next_session %}{{ next_session.scheduled_time|date:"l, M d \a\t h:i A" }}{% else %}Awaiting schedule{% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md border border-white/10 shadow-inner hidden sm:block">
+                        <i class="fa-solid fa-video text-2xl text-indigo-300"></i>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex flex-col sm:flex-row sm:items-center justify-between relative z-10 border-t border-white/10 pt-4 gap-4">
+                    <p class="text-xs font-bold text-indigo-300 flex items-center bg-indigo-900/50 px-3 py-1.5 rounded-md w-fit">
+                        <i class="fa-solid fa-shield-halved mr-1.5 text-indigo-400"></i> 95% Attendance Mandatory
+                    </p>
+                    {% if next_session %}
+                    <a href="{{ next_session.meeting_link }}" target="_blank" class="bg-white text-indigo-900 px-6 py-2.5 rounded-lg text-sm font-black shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:bg-gray-100 transition-all text-center uppercase tracking-wide">
+                        Join Session
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TASK ASSIGNMENTS -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-extrabold text-gray-900 mb-4 flex items-center">
+                    <i class="fa-solid fa-list-check mr-2 text-indigo-600"></i> Pending Daily Targets
+                </h3>
+                <div class="space-y-3">
+                    {% for task in pending_tasks %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div>
+                            <p class="font-bold text-gray-900">{{ task.title }}</p>
+                            <p class="text-xs text-red-500 font-bold mt-1"><i class="fa-regular fa-clock"></i> Due: {{ task.deadline|date:"d M, H:i" }}</p>
+                        </div>
+                        <!-- For MVP, this could just link to a WhatsApp number to send proof -->
+                        <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700">Submit</button>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-400 py-6 italic font-medium">All targets complete. Rest and recover.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COL: Form Tracker & Salvage -->
+        <div class="space-y-6">
+            <!-- EXAM FORM TRACKER -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-extrabold text-gray-900 mb-4">Official Exam Forms</h3>
+                <div class="space-y-4">
+                    {% for exam in mandatory_exams %}
+                    <div class="border-l-4 {% if exam.application_form_submitted %}border-green-500{% else %}border-gray-300{% endif %} pl-4 py-1">
+                        <p class="text-sm font-bold text-gray-800">{{ exam.exam_name }}</p>
+                        <div class="flex space-x-2 mt-2">
+                            <span class="text-[10px] px-2 py-0.5 rounded {% if exam.application_form_submitted %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-400{% endif %} font-bold">FORM</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded {% if exam.admit_card_submitted %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-400{% endif %} font-bold">ADMIT</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded {% if exam.appeared_for_exam %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-400{% endif %} font-bold">APPEARED</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-gray-500 italic">No exams assigned yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- RECOVERY PROTOCOL (Only shows if status is YELLOW) -->
+            {% if profile.get_compliance_status.0 == 'YELLOW' %}
+            <div class="bg-yellow-500 text-yellow-900 p-6 rounded-2xl shadow-lg animate-pulse border-2 border-yellow-600">
+                <h3 class="font-black text-lg uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation"></i> Salvage Protocol</h3>
+                <p class="text-sm mt-2 font-medium">Your 40k refund is at risk. Complete pending tasks immediately to return to Green Status.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION: Ledger (From your original code) -->
+    <div class="bg-white shadow-sm border border-gray-100 rounded-2xl overflow-hidden mt-8">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-extrabold text-gray-900 text-lg">Performance & Compliance Ledger</h3>
+            <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1 rounded-full">Automated Audit Trail</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Activity</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Score</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-500">{{ log.timestamp|date:"d M, Y" }}</td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-gray-900">{{ log.activity_name }}</div>
+                            <div class="text-xs font-medium text-gray-400 mt-1">{{ log.get_activity_type_display }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-center font-black text-indigo-600">
+                            {% if log.score_percentage %}{{ log.score_percentage }}%{% else %}--{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if log.is_compliant %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                    <i class="fa-solid fa-check mr-1.5"></i> Compliant
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                    <i class="fa-solid fa-xmark mr-1.5"></i> Violation
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic font-medium">No activity reports generated yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
