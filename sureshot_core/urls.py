@@ -1,11 +1,19 @@
-from django.contrib.auth import views as auth_views
+from django.contrib import admin
 from django.urls import path
+from django.contrib.auth import views as auth_views
+from django.views.generic import RedirectView
 from tracker import views
 
 urlpatterns = [
-    # Routes to your new Tailwind login.html
+    # 1. The Admin Command Center (Don't lose this!)
+    path('admin/', admin.site.urls),
+    
+    # 2. The Premium Login Portal
     path('login/', auth_views.LoginView.as_view(template_name='tracker/login.html'), name='login'),
     
-    # Routes to your Command Tower dashboard.html
+    # 3. The Sureshot Dashboard
     path('dashboard/', views.student_dashboard, name='dashboard'),
+    
+    # 4. THE FIX: Auto-redirect the empty home page '/' straight to the dashboard
+    path('', RedirectView.as_view(url='/dashboard/', permanent=False)),
 ]
