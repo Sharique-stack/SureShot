@@ -10,6 +10,9 @@ from .models import (
 
 )
 
+from django.contrib import admin
+from .models import AspirantProfile, LiveSession, Task, MandatoryExam, ComplianceLog, PaymentTransaction
+
 @admin.register(AspirantProfile)
 class AspirantProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'target_exam', 'target_level', 'is_refund_eligible', 'is_selected')
@@ -71,3 +74,12 @@ class TaskSubmissionAdmin(admin.ModelAdmin):
 class LiveSessionAdmin(admin.ModelAdmin):
     list_display = ('title', 'scheduled_time', 'is_active')
     list_filter = ('is_active', 'scheduled_time')
+
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'amount', 'is_successful', 'created_at', 'razorpay_order_id')
+    list_filter = ('is_successful', 'created_at')
+    search_fields = ('user__username', 'razorpay_order_id', 'razorpay_payment_id')
+    readonly_fields = ('created_at',)

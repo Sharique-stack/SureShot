@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     
-    # WhiteNoise app for static file management (optional but good practice)
+    # WhiteNoise app for static file management
     'whitenoise.runserver_nostatic', 
     
     'django.contrib.staticfiles',
@@ -56,7 +56,7 @@ ROOT_URLCONF = 'sureshot_core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [], # If you have a global templates folder, add `os.path.join(BASE_DIR, 'templates')`
+        'DIRS': [], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -73,7 +73,6 @@ WSGI_APPLICATION = 'sureshot_core.wsgi.application'
 
 
 # Database Configuration
-# This looks for the Neon Database URL first. If not found (like on your local PC), it uses SQLite.
 if 'DATABASE_URL' in os.environ:
     DATABASES = {
         'default': dj_database_url.config(
@@ -116,13 +115,14 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-
-# This is where Django will put all static files when you deploy to Render
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Tells WhiteNoise to compress static files and cache them for fast loading
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ==========================================
+# RAZORPAY CONFIGURATION (SURESHOT PAYMENTS)
+# ==========================================
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'test_dummy_key_id')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'test_dummy_secret')
