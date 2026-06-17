@@ -71,9 +71,31 @@
             
             // This is the endpoint Razorpay pushes data to upon successful user authorization
             "handler": function (response){
-                // For this stage, we will redirect them to a success confirmation landing page
-                window.location.href = "/dashboard/?payment=success&order=" + response.razorpay_order_id;
-            },
+    // Dynamically build a form to safely submit tokens to our backend verification route
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/verify-payment/';
+
+    // Inject the required tokens
+    var params = {
+        'razorpay_payment_id': response.razorpay_payment_id,
+        'razorpay_order_id': response.razorpay_order_id,
+        'razorpay_signature': response.razorpay_signature
+    };
+
+    for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+            var hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = key;
+            hiddenField.value = params[key];
+            form.appendChild(hiddenField);
+        }
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+},
             "prefill": {
                 "name": "{{ user_username }}",
                 "email": "{{ user_email }}"

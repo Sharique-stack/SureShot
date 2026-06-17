@@ -6,6 +6,10 @@ from django.conf import settings
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import PaymentTransaction
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.shortcuts import redirect
+from django.contrib import messages
 
 @login_required(login_url='/admin/login/') 
 def student_dashboard(request):
@@ -81,3 +85,52 @@ def initiate_payment(request):
     }
     
     return render(request, 'tracker/checkout.html', context)
+
+@csrf_exempt
+def verify_payment(request):
+    if request.method == "POST":
+        # Extract the verification tokens sent back by the Razorpay checkout overlay
+        payment_id = request.POST.get('razorpay_payment_id', '')
+        order_id = request.POST.get('razorpay_order_id', '')
+        signature = request.POST.get('razorpay_signature', '')
+
+        # Initialize the official client
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+        # Create the exact dictionary structure required by the SDK validator
+        params_dict = {
+            'razorpay_order_id': order_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature
+        }
+
+        try:
+            # Cryptographic verification step
+            # This hashes the order_id + payment_id using your hidden Key Secret
+            # and matches it perfectly against the signature header.
+            client.utility.verify_payment_signature(params_dict)
+
+            # Locate the matching transaction entry in our Neon database ledger
+            transaction = PaymentTransaction.objects.get(razorpay_order_id=order_id)
+            transaction.razorpay_payment_id = payment_id
+            transaction.razorpay_signature = signature
+            transaction.is_successful = True
+            transaction.save()
+
+            # Ensure an AspirantProfile exists for this user and activate them
+            # (Assuming an AspirantProfile model linked to User)
+            if hasattr(transaction.user, 'aspirantprofile'):
+                profile = transaction.user.aspirantprofile
+                profile.is_active = True # Flips the green dashboard shield to active
+                profile.save()
+
+            messages.success(request, "Enrollment Complete! Welcome to Sureshot.")
+            return redirect('/dashboard/')
+
+        except razorpay.errors.SignatureVerificationError:
+            # Triggered if the keys don't match up, implying an altered request payload
+            return HttpResponseBadRequest("Security Alert: Cryptographic Signature Verification Failed.")
+        except PaymentTransaction.DoesNotExist:
+            return HttpResponseBadRequest("Transaction record not found in system ledger.")
+            
+    return HttpResponseBadRequest("Invalid Request Method.")

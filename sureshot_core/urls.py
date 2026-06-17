@@ -19,4 +19,7 @@ urlpatterns = [
 
     # 5. Payment integration
     path('checkout/', views.initiate_payment, name='checkout'),
+
+    # 6. Verify payment
+    path('verify-payment/', views.verify_payment, name='verify_payment'),
 ]
