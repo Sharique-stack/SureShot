@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sureshot Elite Cohort - Secure Checkout</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center font-sans antialiased">
+
+    <div class="max-w-xl w-full mx-4 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+        <!-- Premium Accent Glow -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600"></div>
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <span class="text-xs font-semibold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20">
+                Govt Drish Premium Access
+            </span>
+            <h1 class="text-3xl font-bold mt-4 tracking-tight">Sureshot Accountability</h1>
+            <p class="text-slate-400 mt-2 text-sm">Secure Enrollment & Compliance Onboarding</p>
+        </div>
+
+        <!-- Details Card -->
+        <div class="bg-slate-950/50 border border-slate-800/80 rounded-xl p-5 mb-6 space-y-4">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <span class="text-slate-400 font-medium">Program Seat Reservation</span>
+                <span class="text-xl font-bold tracking-tight text-white">₹40,000.00</span>
+            </div>
+            
+            <!-- Terms Checkmarks -->
+            <ul class="text-xs space-y-2.5 text-slate-400">
+                <li class="flex items-start gap-2.5">
+                    <span class="text-emerald-400 mt-0.5">✔</span>
+                    <span><strong>100% Fee-Refund Assurance</strong> active upon onboarding.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-emerald-400 mt-0.5">✔</span>
+                    <span>Live control tower dashboard metrics activated instantly post-payment.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-indigo-400 mt-0.5">ℹ</span>
+                    <span>Strict compliance terms apply: Refund status relies entirely on consistent dashboard milestone tracking.</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Secure Notice -->
+        <div class="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-400 mb-8">
+            <span class="text-lg">🔒</span>
+            <p>Payments are securely routed via Razorpay using multi-layer 256-bit encryption. Your transaction ledger ID is generated.</p>
+        </div>
+
+        <!-- Checkout Action Button -->
+        <button id="rzp-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-4 px-6 rounded-xl transition duration-200 transform active:scale-[0.99] shadow-lg shadow-indigo-600/10 tracking-wide text-center">
+            Complete Secure Payment (₹40,000)
+        </button>
+    </div>
+
+    <!-- Razorpay Standard Checkout Script Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        var options = {
+            "key": "{{ razorpay_key_id }}", 
+            "amount": "{{ amount }}", 
+            "currency": "INR",
+            "name": "Govt Drish",
+            "description": "Sureshot Premium Cohort Enrollment",
+            "image": "https://govtdrish.com/logo.png", // Optional: Replace with your actual logo later
+            "order_id": "{{ razorpay_order_id }}",
+            
+            // This is the endpoint Razorpay pushes data to upon successful user authorization
+            "handler": function (response){
+                // For this stage, we will redirect them to a success confirmation landing page
+                window.location.href = "/dashboard/?payment=success&order=" + response.razorpay_order_id;
+            },
+            "prefill": {
+                "name": "{{ user_username }}",
+                "email": "{{ user_email }}"
+            },
+            "theme": {
+                "color": "#4f46e5" // Sleek Indigo accent theme matching your custom ecosystem
+            }
+        };
+        
+        var rzp1 = new Razorpay(options);
+        
+        document.getElementById('rzp-button').onclick = function(e){
+            rzp1.open();
+            e.preventDefault();
+        }
+    </script>
+</body>
+</html>
