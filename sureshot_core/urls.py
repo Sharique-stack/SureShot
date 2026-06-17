@@ -16,4 +16,7 @@ urlpatterns = [
     
     # 4. THE FIX: Auto-redirect the empty home page '/' straight to the dashboard
     path('', RedirectView.as_view(url='/dashboard/', permanent=False)),
+
+    # 5. Payment integration
+    path('checkout/', views.initiate_payment, name='checkout'),
 ]

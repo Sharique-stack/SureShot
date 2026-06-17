@@ -1,6 +1,11 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import AspirantProfile, ComplianceLog, Task, TaskSubmission, MandatoryExam, LiveSession
+import razorpay
+from django.conf import settings
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import PaymentTransaction
 
 @login_required(login_url='/admin/login/') 
 def student_dashboard(request):
@@ -37,3 +42,42 @@ def student_dashboard(request):
     }
     
     return render(request, 'tracker/dashboard.html', context)
+
+@login_required
+def initiate_payment(request):
+    # ₹40,000 final premium price point. 
+    # Razorpay expects amounts in paise (1 INR = 100 paise), so ₹40,000 = 4000000 paise.
+    amount_in_paise = 4000000 
+    
+    # Initialize the Razorpay client with your keys
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    
+    # 1. Create the order payload for Razorpay's API
+    order_data = {
+        'amount': amount_in_paise,
+        'currency': 'INR',
+        'payment_capture': '1'  # 1 means automatically capture payment immediately upon authorization
+    }
+    
+    # 2. Call Razorpay API to generate a unique Order ID
+    razorpay_order = client.order.create(data=order_data)
+    razorpay_order_id = razorpay_order['id']
+    
+    # 3. Log this transaction initialization in our Neon database ledger
+    PaymentTransaction.objects.create(
+        user=request.user,
+        amount=40000.00,
+        razorpay_order_id=razorpay_order_id,
+        is_successful=False  # Stays False until callback verifies payment success
+    )
+    
+    # 4. Pass transaction variables to the frontend payment gateway popup
+    context = {
+        'razorpay_order_id': razorpay_order_id,
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+        'amount': amount_in_paise,
+        'user_email': request.user.email,
+        'user_username': request.user.username,
+    }
+    
+    return render(request, 'tracker/checkout.html', context)
