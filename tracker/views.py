@@ -20,7 +20,7 @@ from .models import (
 # 1. DASHBOARD & TASK SUBMISSION
 # ==========================================
 
-@login_required(login_url='/admin/login/') 
+@login_required(login_url='/accounts/login/') 
 def student_dashboard(request):
     # Safely check if the logged-in user actually has an AspirantProfile
     if hasattr(request.user, 'aspirantprofile'):
@@ -36,9 +36,13 @@ def student_dashboard(request):
             aspirant=profile
         ).values_list('task_id', flat=True)
         
+        # Only show pending tasks where the deadline is in the future AND the task was assigned after they joined
         pending_tasks = Task.objects.exclude(
             id__in=submitted_task_ids
-        ).filter(deadline__gte=now).order_by('deadline')
+        ).filter(
+            deadline__gte=now,
+            deadline__gte=request.user.date_joined
+        ).order_by('deadline')
         
         # Fetch Live Session
         next_session = LiveSession.objects.filter(is_active=True).order_by('scheduled_time').first()
@@ -62,7 +66,7 @@ def student_dashboard(request):
     return render(request, 'tracker/dashboard.html', context)
 
 
-@login_required(login_url='/admin/login/')
+@login_required(login_url='/accounts/login/')
 def submit_task(request, task_id):
     if request.method == "POST":
         task = get_object_or_404(Task, id=task_id)
@@ -97,7 +101,7 @@ def submit_task(request, task_id):
 # 2. PAYMENT GATEWAY (RAZORPAY)
 # ==========================================
 
-@login_required
+@login_required(login_url='/accounts/login/')
 def initiate_payment(request):
     amount_in_paise = 4000000 
     
@@ -191,6 +195,13 @@ def run_compliance_engine(request):
         # --- PHASE A: RED DROP ENFORCEMENT ---
         mandatory_tasks = Task.objects.filter(is_mandatory=True, deadline__lt=now)
         for task in mandatory_tasks:
+            
+            # --- THE LATE JOINER PATCH ---
+            # If the task deadline passed before the user even created their account, ignore it.
+            if task.deadline < profile.user.date_joined:
+                continue 
+            # -----------------------------
+            
             submitted = task.tasksubmission_set.filter(aspirant=profile).exists()
             if not submitted:
                 profile.is_refund_eligible = False
@@ -215,6 +226,11 @@ def run_compliance_engine(request):
             )
             
             for task in upcoming_tasks:
+                
+                # Also ignore warnings for tasks that were due before they joined (edge case protection)
+                if task.deadline < profile.user.date_joined:
+                    continue
+
                 submitted = task.tasksubmission_set.filter(aspirant=profile).exists()
                 if not submitted:
                     already_warned = ComplianceLog.objects.filter(
