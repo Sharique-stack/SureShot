@@ -156,8 +156,8 @@ def run_compliance_engine(request):
         mandatory_tasks = Task.objects.filter(is_mandatory=True, deadline__lt=now)
         
         for task in mandatory_tasks:
-            # 3. Check if THIS student submitted THIS specific task
-            submitted = task.tasksubmission_set.filter(user=profile.user).exists()
+            # 3. Use 'aspirant' instead of 'user' to match your TaskSubmission model
+            submitted = task.tasksubmission_set.filter(aspirant=profile).exists()
             
             if not submitted:
                 # Violation found: Void the refund eligibility
@@ -165,7 +165,7 @@ def run_compliance_engine(request):
                 profile.refund_voided_reason = f"Missed deadline: {task.title}"
                 profile.save()
                 
-                # Create the audit log
+                # Create the audit log (using profile.user if your ComplianceLog needs a User)
                 ComplianceLog.objects.create(
                     user=profile.user,
                     violation_type="Missed Mandatory Deadline",
@@ -173,8 +173,7 @@ def run_compliance_engine(request):
                     timestamp=now
                 )
                 shields_dropped += 1
-                break 
-
+                break
     return JsonResponse({
         "status": "Sweep Complete",
         "shields_dropped": shields_dropped
