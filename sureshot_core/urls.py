@@ -23,6 +23,9 @@ urlpatterns = [
     # 6. Verify payment
     path('verify-payment/', views.verify_payment, name='verify_payment'),
 
-    # compliance engine
+    # 7. compliance engine
     path('engine/run-compliance/', views.run_compliance_engine, name='run_compliance'),
+
+    # 8. submit task
+    path('submit-task/<int:task_id>/', views.submit_task, name='submit_task'),
 ]
