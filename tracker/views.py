@@ -146,33 +146,39 @@ def run_compliance_engine(request):
         return JsonResponse({"error": "Unauthorized"}, status=403)
 
     now = timezone.now()
+    shields_dropped = 0
     
-    # 1. Get all tasks that have passed their deadline
-    overdue_tasks = Task.objects.filter(deadline__lt=now)
+    # 1. Get all active aspirants
+    aspirants = AspirantProfile.objects.filter(is_active=True)
     
-    failed_count = 0
-    for task in overdue_tasks:
-        # 2. Check if a submission exists for this specific task
-        # We look for a TaskSubmission linked to this task
-        has_submitted = task.tasksubmission_set.exists()
+    for profile in aspirants:
+        # 2. Get all mandatory tasks that have passed their deadline
+        # We assume Task model is global; if tasks are user-specific, 
+        # this query may need a filter(student=profile.user)
+        mandatory_tasks = Task.objects.filter(is_mandatory=True, deadline__lt=now)
         
-        if not has_submitted:
-            # 3. Assuming your Task model has a 'student' or 'user' field, 
-            # if not, you'll need to link via the student's profile directly
-            # For this logic, I'm assuming 'student' exists on the task.
-            profile = task.student.aspirantprofile 
+        for task in mandatory_tasks:
+            # 3. Check if THIS student submitted THIS task
+            submitted = task.tasksubmission_set.filter(user=profile.user).exists()
             
-            if profile.is_active:
-                profile.is_active = False 
+            if not submitted:
+                # Violation found: Drop the shield
+                profile.is_active = False
                 profile.save()
                 
                 ComplianceLog.objects.create(
-                    user=task.student,
-                    violation_type="Missed Task Deadline",
-                    details=f"Failed to submit task: {task.title} (Deadline: {task.deadline})",
+                    user=profile.user,
+                    violation_type="Missed Mandatory Deadline",
+                    details=f"Missed: {task.title} (Due: {task.deadline})",
                     timestamp=now
                 )
-                failed_count += 1
+                shields_dropped += 1
+                break # Break out of task loop, shield already dropped
+
+    return JsonResponse({
+        "status": "Sweep Complete",
+        "shields_dropped": shields_dropped
+    })
 
     return JsonResponse({
         "status": "Sweep Complete",
