@@ -28,4 +28,7 @@ urlpatterns = [
 
     # 8. submit task
     path('submit-task/<int:task_id>/', views.submit_task, name='submit_task'),
+
+    # 9. login, logout
+    path('accounts/', include('django.contrib.auth.urls')),
 ]

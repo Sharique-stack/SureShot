@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-default-secret-key-here')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'sureshot-prod-key-8x!p9q2z$w#m5v+k_n@d4c*j(b7y%r1t')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # For this MVP POC, we default to True if no environment variable is set.
@@ -126,3 +126,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ==========================================
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'test_dummy_key_id')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'test_dummy_secret')
+
+# Add or update these lines at the bottom of settings.py:
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'

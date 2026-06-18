@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sureshot | Secure Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen flex flex-col justify-center items-center relative overflow-hidden">
+
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-900/20 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <div class="w-full max-w-md p-8 relative z-10">
+        
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-black tracking-widest text-white mb-2">SURESHOT</h1>
+            <p class="text-emerald-500 font-mono text-sm tracking-wide">ACCOUNTABILITY ENGINE GATEWAY</p>
+        </div>
+
+        <div class="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+            
+            {% if form.errors %}
+                <div class="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm text-center font-medium">
+                    Authentication failed. Please verify your credentials.
+                </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="id_username" class="block text-xs font-bold tracking-wider text-zinc-400 uppercase mb-2">Aspirant ID (Username)</label>
+                    <input type="text" name="username" id="id_username" required
+                           class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-colors"
+                           placeholder="Enter your system ID">
+                </div>
+
+                <div>
+                    <label for="id_password" class="block text-xs font-bold tracking-wider text-zinc-400 uppercase mb-2">Secure Passkey</label>
+                    <input type="password" name="password" id="id_password" required
+                           class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-colors"
+                           placeholder="••••••••">
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold tracking-wide uppercase py-3.5 rounded-lg transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] mt-4">
+                    Initialize Session
+                </button>
+                
+                <input type="hidden" name="next" value="{{ next|default:'/dashboard/' }}">
+            </form>
+        </div>
+
+        <div class="text-center mt-8">
+            <p class="text-xs text-zinc-600">Unauthorized access is strictly prohibited.<br>All compliance metrics are actively monitored.</p>
+        </div>
+    </div>
+
+</body>
+</html>
