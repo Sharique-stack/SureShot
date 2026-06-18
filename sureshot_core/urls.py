@@ -22,4 +22,7 @@ urlpatterns = [
 
     # 6. Verify payment
     path('verify-payment/', views.verify_payment, name='verify_payment'),
+
+    # compliance engine
+    path('engine/run-compliance/', views.run_compliance_engine, name='run_compliance'),
 ]

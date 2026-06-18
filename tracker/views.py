@@ -10,6 +10,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Task, AspirantProfile, ComplianceLog
 
 @login_required(login_url='/admin/login/') 
 def student_dashboard(request):
@@ -134,3 +138,44 @@ def verify_payment(request):
             return HttpResponseBadRequest("Transaction record not found in system ledger.")
             
     return HttpResponseBadRequest("Invalid Request Method.")
+
+@csrf_exempt
+def run_compliance_engine(request):
+    # SECURITY CHECK: Prevent random internet bots from triggering your engine
+    # We require a secret token in the URL to run this script.
+    secret_token = request.GET.get('token')
+    if secret_token != settings.SECRET_KEY[:15]: # Uses the first 15 chars of your Django secret
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    now = timezone.now()
+    
+    # 1. Find all tasks that are past their deadline and NOT submitted
+    overdue_tasks = Task.objects.filter(deadline__lt=now, is_submitted=False, is_failed=False)
+    
+    failed_count = 0
+    for task in overdue_tasks:
+        # Mark the specific task as failed
+        task.is_failed = True
+        task.save()
+        
+        # 2. Drop the student's shield to RED (Void Refund)
+        profile = task.aspirant.aspirantprofile # Adjust based on your actual model relations (aspirant)
+        if profile.is_active:
+            profile.is_active = False # THIS TURNS THE DASHBOARD RED
+            profile.save()
+            
+            # 3. Create an immutable audit log for the dispute resolution team
+            ComplianceLog.objects.create(
+                user=task.student,
+                violation_type="Missed Task Deadline",
+                details=f"Failed to submit task: {task.title} by {task.deadline}",
+                timestamp=now
+            )
+            failed_count += 1
+
+    return JsonResponse({
+        "status": "Compliance Sweep Complete",
+        "timestamp": now,
+        "overdue_tasks_processed": len(overdue_tasks),
+        "shields_dropped_to_red": failed_count
+    })
