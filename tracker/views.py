@@ -141,30 +141,24 @@ def verify_payment(request):
 
 @csrf_exempt
 def run_compliance_engine(request):
-    # SECURITY CHECK: Prevent random internet bots from triggering your engine
-    # We require a secret token in the URL to run this script.
-    secret_token = request.GET.get('token')
-    if secret_token != settings.SECRET_KEY[:15]: # Uses the first 15 chars of your Django secret
-        return JsonResponse({"error": "Unauthorized"}, status=403)
+    # Fix 1: Compare against the full secret key from your settings
+    provided_token = request.GET.get('token')
+    if provided_token != settings.SECRET_KEY:
+        return JsonResponse({"error": "Unauthorized: Token Mismatch"}, status=403)
 
     now = timezone.now()
     
-    # 1. Find all tasks that are past their deadline and NOT submitted
-    overdue_tasks = Task.objects.filter(deadline__lt=now, is_submitted=False, is_failed=False)
+    # Fix 2: Remove 'is_failed=False' since that field doesn't exist on your Task model
+    overdue_tasks = Task.objects.filter(deadline__lt=now, is_submitted=False)
     
     failed_count = 0
     for task in overdue_tasks:
-        # Mark the specific task as failed
-        task.is_failed = True
-        task.save()
-        
-        # 2. Drop the student's shield to RED (Void Refund)
-        profile = task.aspirant.aspirantprofile # Adjust based on your actual model relations (aspirant)
+        # Mark as failed in your logic (without trying to save it to a non-existent field)
+        profile = task.student.aspirantprofile 
         if profile.is_active:
-            profile.is_active = False # THIS TURNS THE DASHBOARD RED
+            profile.is_active = False 
             profile.save()
             
-            # 3. Create an immutable audit log for the dispute resolution team
             ComplianceLog.objects.create(
                 user=task.student,
                 violation_type="Missed Task Deadline",
@@ -172,6 +166,12 @@ def run_compliance_engine(request):
                 timestamp=now
             )
             failed_count += 1
+
+    return JsonResponse({
+        "status": "Compliance Sweep Complete",
+        "processed": len(overdue_tasks),
+        "shields_dropped": failed_count
+    })
 
     return JsonResponse({
         "status": "Compliance Sweep Complete",
