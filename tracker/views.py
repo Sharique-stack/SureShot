@@ -14,6 +14,13 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Task, AspirantProfile, ComplianceLog
+from django.utils import timezone
+from datetime import timedelta
+from django.core.mail import send_mail
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from .models import Task, AspirantProfile, ComplianceLog
 
 @login_required(login_url='/admin/login/') 
 def student_dashboard(request):
@@ -141,31 +148,30 @@ def verify_payment(request):
 
 
 @csrf_exempt
+@csrf_exempt
 def run_compliance_engine(request):
     if request.GET.get('token') != settings.SECRET_KEY:
         return JsonResponse({"error": "Unauthorized"}, status=403)
 
     now = timezone.now()
+    warning_window = now + timedelta(hours=24)
+    
     shields_dropped = 0
+    warnings_sent = 0
     
     # 1. Get all aspirants who are still eligible for a refund
     aspirants = AspirantProfile.objects.filter(is_refund_eligible=True)
     
     for profile in aspirants:
-        # 2. Get all mandatory tasks that have passed their deadline
+        # --- PHASE A: RED DROP ENFORCEMENT (Past Deadlines) ---
         mandatory_tasks = Task.objects.filter(is_mandatory=True, deadline__lt=now)
-        
         for task in mandatory_tasks:
-            # 3. Use 'aspirant' instead of 'user' to match your TaskSubmission model
             submitted = task.tasksubmission_set.filter(aspirant=profile).exists()
-            
             if not submitted:
-                # Violation found: Void the refund eligibility
                 profile.is_refund_eligible = False
                 profile.refund_voided_reason = f"Missed deadline: {task.title}"
                 profile.save()
                 
-                # Create the audit log (using profile.user if your ComplianceLog needs a User)
                 ComplianceLog.objects.create(
                     user=profile.user,
                     violation_type="Missed Mandatory Deadline",
@@ -173,32 +179,48 @@ def run_compliance_engine(request):
                     timestamp=now
                 )
                 shields_dropped += 1
-                break
-    return JsonResponse({
-        "status": "Sweep Complete",
-        "shields_dropped": shields_dropped
-    })
+                break # Shield is dropped, no need to check other tasks for this user
+
+        # --- PHASE B: YELLOW ALERT WARNING (Next 24 Hours) ---
+        # Only check warnings if their shield hasn't already dropped
+        if profile.is_refund_eligible:
+            upcoming_tasks = Task.objects.filter(
+                is_mandatory=True, 
+                deadline__gt=now, 
+                deadline__lte=warning_window
+            )
+            
+            for task in upcoming_tasks:
+                submitted = task.tasksubmission_set.filter(aspirant=profile).exists()
+                if not submitted:
+                    # Check if we already warned them about this specific task
+                    already_warned = ComplianceLog.objects.filter(
+                        user=profile.user,
+                        violation_type="Yellow Alert Warning",
+                        details__contains=task.title
+                    ).exists()
+
+                    if not already_warned:
+                        # 1. Send the Email
+                        send_mail(
+                            subject=f"URGENT: 24-Hour Warning for {task.title}",
+                            message=f"Hi {profile.user.username},\n\nYou have less than 24 hours to submit '{task.title}'. If you miss this deadline, your ₹40,000 refund guarantee will be permanently voided.\n\nLog in to your Sureshot dashboard to submit immediately.",
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[profile.user.email],
+                            fail_silently=True, # Set to False in production to catch email errors
+                        )
+                        
+                        # 2. Log the warning so we don't spam them next hour
+                        ComplianceLog.objects.create(
+                            user=profile.user,
+                            violation_type="Yellow Alert Warning",
+                            details=f"Warning sent for: {task.title}",
+                            timestamp=now
+                        )
+                        warnings_sent += 1
 
     return JsonResponse({
         "status": "Sweep Complete",
-        "shields_dropped": shields_dropped
-    })
-
-    return JsonResponse({
-        "status": "Sweep Complete",
-        "processed_tasks": len(overdue_tasks),
-        "shields_dropped": failed_count
-    })
-
-    return JsonResponse({
-        "status": "Compliance Sweep Complete",
-        "processed": len(overdue_tasks),
-        "shields_dropped": failed_count
-    })
-
-    return JsonResponse({
-        "status": "Compliance Sweep Complete",
-        "timestamp": now,
-        "overdue_tasks_processed": len(overdue_tasks),
-        "shields_dropped_to_red": failed_count
+        "shields_dropped": shields_dropped,
+        "warnings_sent": warnings_sent
     })
