@@ -148,32 +148,37 @@ def run_compliance_engine(request):
     now = timezone.now()
     shields_dropped = 0
     
-    # 1. Get all active aspirants
-    aspirants = AspirantProfile.objects.filter(is_active=True)
+    # 1. Get all aspirants who are still eligible for a refund
+    aspirants = AspirantProfile.objects.filter(is_refund_eligible=True)
     
     for profile in aspirants:
         # 2. Get all mandatory tasks that have passed their deadline
-        # We assume Task model is global; if tasks are user-specific, 
-        # this query may need a filter(student=profile.user)
         mandatory_tasks = Task.objects.filter(is_mandatory=True, deadline__lt=now)
         
         for task in mandatory_tasks:
-            # 3. Check if THIS student submitted THIS task
+            # 3. Check if THIS student submitted THIS specific task
             submitted = task.tasksubmission_set.filter(user=profile.user).exists()
             
             if not submitted:
-                # Violation found: Drop the shield
-                profile.is_active = False
+                # Violation found: Void the refund eligibility
+                profile.is_refund_eligible = False
+                profile.refund_voided_reason = f"Missed deadline: {task.title}"
                 profile.save()
                 
+                # Create the audit log
                 ComplianceLog.objects.create(
                     user=profile.user,
                     violation_type="Missed Mandatory Deadline",
-                    details=f"Missed: {task.title} (Due: {task.deadline})",
+                    details=f"Failed to submit: {task.title} (Due: {task.deadline})",
                     timestamp=now
                 )
                 shields_dropped += 1
-                break # Break out of task loop, shield already dropped
+                break 
+
+    return JsonResponse({
+        "status": "Sweep Complete",
+        "shields_dropped": shields_dropped
+    })
 
     return JsonResponse({
         "status": "Sweep Complete",
