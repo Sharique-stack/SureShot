@@ -37,13 +37,15 @@ def student_dashboard(request):
         ).values_list('task_id', flat=True)
         
         # Only show pending tasks where the deadline is in the future AND the task was assigned after they joined
+        # Identify Pending Tasks
+        submitted_task_ids = TaskSubmission.objects.filter(
+            aspirant=profile
+        ).values_list('task_id', flat=True)
+        
+        # Only show upcoming pending tasks
         pending_tasks = Task.objects.exclude(
             id__in=submitted_task_ids
-        ).filter(
-            deadline__gte=now,
-            deadline__gte=request.user.date_joined
-        ).order_by('deadline')
-        
+        ).filter(deadline__gte=now).order_by('deadline')
         # Fetch Live Session
         next_session = LiveSession.objects.filter(is_active=True).order_by('scheduled_time').first()
 
