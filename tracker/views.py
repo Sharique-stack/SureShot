@@ -139,33 +139,46 @@ def verify_payment(request):
             
     return HttpResponseBadRequest("Invalid Request Method.")
 
+
 @csrf_exempt
 def run_compliance_engine(request):
-    # Fix 1: Compare against the full secret key from your settings
-    provided_token = request.GET.get('token')
-    if provided_token != settings.SECRET_KEY:
-        return JsonResponse({"error": "Unauthorized: Token Mismatch"}, status=403)
+    if request.GET.get('token') != settings.SECRET_KEY:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
 
     now = timezone.now()
     
-    # Fix 2: Remove 'is_failed=False' since that field doesn't exist on your Task model
-    overdue_tasks = Task.objects.filter(deadline__lt=now, is_submitted=False)
+    # 1. Get all tasks that have passed their deadline
+    overdue_tasks = Task.objects.filter(deadline__lt=now)
     
     failed_count = 0
     for task in overdue_tasks:
-        # Mark as failed in your logic (without trying to save it to a non-existent field)
-        profile = task.student.aspirantprofile 
-        if profile.is_active:
-            profile.is_active = False 
-            profile.save()
+        # 2. Check if a submission exists for this specific task
+        # We look for a TaskSubmission linked to this task
+        has_submitted = task.tasksubmission_set.exists()
+        
+        if not has_submitted:
+            # 3. Assuming your Task model has a 'student' or 'user' field, 
+            # if not, you'll need to link via the student's profile directly
+            # For this logic, I'm assuming 'student' exists on the task.
+            profile = task.student.aspirantprofile 
             
-            ComplianceLog.objects.create(
-                user=task.student,
-                violation_type="Missed Task Deadline",
-                details=f"Failed to submit task: {task.title} by {task.deadline}",
-                timestamp=now
-            )
-            failed_count += 1
+            if profile.is_active:
+                profile.is_active = False 
+                profile.save()
+                
+                ComplianceLog.objects.create(
+                    user=task.student,
+                    violation_type="Missed Task Deadline",
+                    details=f"Failed to submit task: {task.title} (Deadline: {task.deadline})",
+                    timestamp=now
+                )
+                failed_count += 1
+
+    return JsonResponse({
+        "status": "Sweep Complete",
+        "processed_tasks": len(overdue_tasks),
+        "shields_dropped": failed_count
+    })
 
     return JsonResponse({
         "status": "Compliance Sweep Complete",
