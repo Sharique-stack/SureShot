@@ -8,7 +8,6 @@
 </head>
 <body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen">
 
-    <!-- Navbar -->
     <nav class="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-6 py-4 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center space-x-3">
             <span class="text-xl font-black tracking-wider text-white">SURESHOT</span>
@@ -20,62 +19,43 @@
         </div>
     </nav>
 
-    <!-- Main Container -->
     <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-        <!-- Accountability Shield Banner -->
-{% if user.aspirantprofile.is_refund_eligible %}
-<div class="mb-8 p-6 bg-green-900/30 border border-green-500 rounded-xl flex items-center space-x-4 shadow-[0_0_15px_rgba(34,197,94,0.15)] transition-all">
-    <div class="p-3 bg-green-500/20 rounded-full border border-green-500/50">
-        <!-- Secure Shield Icon -->
-        <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-    </div>
-    <div>
-        <h2 class="text-xl font-bold text-green-400 tracking-wide uppercase">Refund Guarantee: Active</h2>
-        <p class="text-green-200/70 text-sm mt-1">You are fully compliant. Keep hitting your deadlines to protect your ₹40,000.</p>
-    </div>
-</div>
-{% else %}
-<div class="mb-8 p-6 bg-red-900/30 border border-red-500 rounded-xl flex items-center space-x-4 shadow-[0_0_15px_rgba(239,68,68,0.15)] transition-all">
-    <div class="p-3 bg-red-500/20 rounded-full border border-red-500/50">
-        <!-- Warning Triangle Icon -->
-        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-    </div>
-    <div>
-        <h2 class="text-xl font-bold text-red-500 tracking-wide uppercase">Refund Guarantee: Voided</h2>
-        <p class="text-red-200 text-sm mt-1">Reason: <span class="font-semibold text-white bg-red-500/20 px-2 py-0.5 rounded">{{ user.aspirantprofile.refund_voided_reason }}</span></p>
-    </div>
-</div>
-{% endif %}
-        <!-- ROW 1: Accountability Engine Status (The Pitch Shield) -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl relative overflow-hidden">
-            <div class="space-y-2 text-center md:text-left z-10">
-                <h2 class="text-2xl font-bold tracking-tight text-white">Refund Assurance Engine</h2>
-                <p class="text-zinc-400 text-sm max-w-xl">Your performance metrics are monitored in real-time. Maintaining full program compliance safeguards your 100% financial refund guarantee.</p>
-                <div class="pt-2 text-xs font-mono text-zinc-500">Target Level Goal: Level {{ profile.target_level|default:"4" }} ({{ profile.target_exam|default:"Competitive Exams" }})</div>
+        
+        {% if messages %}
+            <div class="space-y-2 mb-4">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg text-sm font-medium {% if message.tags == 'success' %}bg-green-500/20 text-green-400 border border-green-500/50{% elif message.tags == 'error' %}bg-red-500/20 text-red-400 border border-red-500/50{% else %}bg-blue-500/20 text-blue-400 border border-blue-500/50{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             </div>
+        {% endif %}
 
-            <!-- DYNAMIC COLOR-CHANGING SHIELD -->
-            <div class="z-10 w-full md:w-auto flex flex-col items-center">
-                {% if profile.is_refund_eligible or profile == None %}
-                    <!-- GREEN ACTIVE SHIELD -->
-                    <div class="flex items-center space-x-3 bg-emerald-500/10 border border-emerald-500/30 px-6 py-4 rounded-xl text-emerald-400 font-bold shadow-lg shadow-emerald-500/5 w-full justify-center md:w-auto">
-                        <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <span class="tracking-wide uppercase text-sm">COMPLIANT — REFUND ACTIVE</span>
-                    </div>
-                {% else %}
-                    <!-- RED VOID SHIELD -->
-                    <div class="flex items-center space-x-3 bg-red-500/10 border border-red-500/30 px-6 py-4 rounded-xl text-red-400 font-bold shadow-lg shadow-red-500/5 w-full justify-center md:w-auto">
-                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span class="tracking-wide uppercase text-sm">VOID — REFUND CANCELLED</span>
-                    </div>
-                {% endif %}
+        {% if user.aspirantprofile.is_refund_eligible %}
+        <div class="mb-8 p-6 bg-green-900/30 border border-green-500 rounded-xl flex items-center space-x-4 shadow-[0_0_15px_rgba(34,197,94,0.15)] transition-all">
+            <div class="p-3 bg-green-500/20 rounded-full border border-green-500/50">
+                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-green-400 tracking-wide uppercase">Refund Guarantee: Active</h2>
+                <p class="text-green-200/70 text-sm mt-1">You are fully compliant. Keep hitting your deadlines to protect your ₹40,000.</p>
+                <div class="pt-2 text-xs font-mono text-green-500/80">Target: Level {{ profile.target_level|default:"4" }} ({{ profile.target_exam|default:"Competitive Exams" }})</div>
             </div>
         </div>
+        {% else %}
+        <div class="mb-8 p-6 bg-red-900/30 border border-red-500 rounded-xl flex items-center space-x-4 shadow-[0_0_15px_rgba(239,68,68,0.15)] transition-all">
+            <div class="p-3 bg-red-500/20 rounded-full border border-red-500/50">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-red-500 tracking-wide uppercase">Refund Guarantee: Voided</h2>
+                <p class="text-red-200 text-sm mt-1">Reason: <span class="font-semibold text-white bg-red-500/20 px-2 py-0.5 rounded">{{ user.aspirantprofile.refund_voided_reason }}</span></p>
+            </div>
+        </div>
+        {% endif %}
 
-        <!-- ROW 2: Live Session & Pending Tasks Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- COLUMN A: Live Incubation Broadcast -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col justify-between space-y-6 shadow-md">
                 <div class="space-y-2">
                     <div class="flex items-center space-x-2">
@@ -101,26 +81,40 @@
                 {% endif %}
             </div>
 
-            <!-- COLUMN B & C: Actionable Items / Task Pipeline -->
             <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-md space-y-4">
                 <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                     <h3 class="text-sm font-bold tracking-wider uppercase text-zinc-400">Required Deliverables Pipeline</h3>
                     <span class="text-xs bg-zinc-800 text-zinc-300 font-mono px-2 py-0.5 rounded">{{ pending_tasks|length }} Pending</span>
                 </div>
 
-                <div class="divide-y divide-zinc-800/60 max-h-[220px] overflow-y-auto pr-2 space-y-3">
+                <div class="divide-y divide-zinc-800/60 max-h-[350px] overflow-y-auto pr-2 space-y-4">
                     {% for task in pending_tasks %}
-                        <div class="flex justify-between items-start pt-3 first:pt-0">
-                            <div>
-                                <h4 class="text-sm font-semibold text-white">{{ task.title }}</h4>
-                                <p class="text-xs text-zinc-500 mt-0.5">Deadline: <span class="text-zinc-400 font-mono">{{ task.deadline|date:"M d, Y" }}</span></p>
+                        <div class="pt-4 first:pt-0">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="text-base font-semibold text-white">{{ task.title }}</h4>
+                                    <p class="text-xs text-zinc-500 mt-0.5">Deadline: <span class="text-red-400 font-mono font-bold">{{ task.deadline|date:"M d, Y" }}</span></p>
+                                </div>
+                                {% if task.is_mandatory %}
+                                <span class="text-[10px] uppercase font-bold text-red-400 bg-red-400/10 border border-red-400/20 px-2 py-0.5 rounded">
+                                    Mandatory
+                                </span>
+                                {% else %}
+                                <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-400/10 border border-blue-400/20 px-2 py-0.5 rounded">
+                                    Optional
+                                </span>
+                                {% endif %}
                             </div>
-                            <span class="text-[10px] uppercase font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-                                Submission Required
-                            </span>
+                            
+                            <form action="{% url 'submit_task' task.id %}" method="POST" enctype="multipart/form-data" class="mt-3 flex gap-2">
+                                {% csrf_token %}
+                                <input type="text" name="proof_file" required placeholder="Paste link to Google Drive, Repo, or Doc..." class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none placeholder-zinc-600">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors shadow-lg">Submit Proof</button>
+                            </form>
                         </div>
                     {% empty %}
-                        <div class="text-zinc-500 text-sm py-4 italic text-center">
+                        <div class="text-zinc-500 text-sm py-6 italic text-center bg-zinc-950/50 rounded-lg border border-zinc-800 border-dashed">
+                            <svg class="w-8 h-8 text-zinc-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                             All compliance tasks up to date. Excellent tracking.
                         </div>
                     {% endfor %}
@@ -128,7 +122,6 @@
             </div>
         </div>
 
-        <!-- ROW 3: Official Examination Ledger -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-md space-y-4">
             <h3 class="text-sm font-bold tracking-wider uppercase text-zinc-400 border-b border-zinc-800 pb-3">
                 Mandatory Competitive Milestones
@@ -143,7 +136,7 @@
                             <th class="pb-3 pt-1 font-medium text-right">Verification Status</th>
                         </tr>
                     </thead>
-                    <body class="divide-y divide-zinc-800/40">
+                    <tbody class="divide-y divide-zinc-800/40">
                         {% for exam in mandatory_exams %}
                             <tr>
                                 <td class="py-3.5 font-semibold text-white">{{ exam.exam_name }}</td>
@@ -163,7 +156,7 @@
                                 <td colspan="3" class="py-6 text-center text-zinc-500 italic">No milestone profiles assigned to this account asset yet.</td>
                             </tr>
                         {% endfor %}
-                    </body>
+                    </tbody>
                 </table>
             </div>
         </div>
