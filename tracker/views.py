@@ -14,9 +14,8 @@ from django.core.mail import send_mail
 
 from .models import (
     AspirantProfile, ComplianceLog, Task, TaskSubmission, 
-    MandatoryExam, LiveSession, PaymentTransaction
+    MandatoryExam, LiveSession, CashfreeTransaction
 )
-
 
 # ==========================================
 # 1. DASHBOARD & TASK SUBMISSION
@@ -150,7 +149,7 @@ def initiate_payment(request):
         payment_session_id = cf_data.get('payment_session_id')
         
         # Log the pending transaction in the database
-        PaymentTransaction.objects.create(
+        CashfreeTransaction.objects.create(
             user=request.user,
             amount=40000.00,
             order_id=order_id,
@@ -159,7 +158,7 @@ def initiate_payment(request):
         
         context = {
             'payment_session_id': payment_session_id,
-            'environment': settings.CASHFREE_ENV.lower(),
+            'environment': settings.CASHFREE_ENVIRONMENT.lower(),
         }
         return render(request, 'tracker/checkout.html', context)
     else:
@@ -195,7 +194,7 @@ def verify_payment(request):
         
         if order_data.get('order_status') == 'PAID':
             # 1. Update Transaction Ledger
-            transaction = get_object_or_404(PaymentTransaction, cf_order_id=order_id)
+            transaction = get_object_or_404(CashfreeTransaction, cf_order_id=order_id)
             transaction.is_successful = True
             transaction.save()
 
