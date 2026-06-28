@@ -153,7 +153,7 @@ def initiate_payment(request):
         PaymentTransaction.objects.create(
             user=request.user,
             amount=40000.00,
-            cf_order_id=order_id,
+            order_id=order_id,
             is_successful=False 
         )
         
