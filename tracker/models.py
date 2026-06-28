@@ -154,7 +154,8 @@ class PaymentTransaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     
     # Cashfree Architecture
-    order_id = models.CharField(max_length=100, unique=True)
+    # Change to this temporary state to let the migration run
+    order_id = models.CharField(max_length=100, unique=False, null=True, blank=True)
     cf_payment_id = models.CharField(max_length=100, blank=True, null=True)
     payment_session_id = models.CharField(max_length=255, blank=True, null=True)
     
