@@ -75,11 +75,12 @@ WSGI_APPLICATION = 'sureshot_core.wsgi.application'
 # Database Configuration
 if 'DATABASE_URL' in os.environ:
     DATABASES = {
-        'default': dj_database_url.config(
-            conn_max_age=600,
-            ssl_require=True
-        )
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=0,               # Kills the connection after every request
+        conn_health_checks=True,      # Pings the DB to ensure SSL is active before querying
+    )
+}
 else:
     DATABASES = {
         'default': {
