@@ -131,3 +131,12 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'test_dummy_secret')
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# # Sureshot Payment Gateway (Cashfree)
+# CASHFREE_APP_ID = 'TEST1094545412586848ab56f8299e1e45454901'
+# CASHFREE_SECRET_KEY = 'cfsk_ma_test_cda50f1be98a0c67c2262586adb14551_4b27e417'
+# CASHFREE_ENV = 'SANDBOX' # Change to 'PRODUCTION' when going live
+
+CASHFREE_APP_ID = os.getenv('CASHFREE_APP_ID')
+CASHFREE_SECRET_KEY = os.getenv('CASHFREE_SECRET_KEY')
+CASHFREE_ENVIRONMENT = os.getenv('CASHFREE_ENVIRONMENT', 'SANDBOX')

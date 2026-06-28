@@ -1,4 +1,6 @@
 import razorpay
+import requests
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
@@ -100,81 +102,123 @@ def submit_task(request, task_id):
 
 
 # ==========================================
-# 2. PAYMENT GATEWAY (RAZORPAY)
+# 2. PAYMENT GATEWAY (CASHFREE)
 # ==========================================
 
 @login_required(login_url='/accounts/login/')
 def initiate_payment(request):
-    amount_in_paise = 4000000 
+    # Generate a unique Order ID for this transaction
+    order_id = f"SURESHOT_{uuid.uuid4().hex[:10].upper()}"
     
-    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-    
-    order_data = {
-        'amount': amount_in_paise,
-        'currency': 'INR',
-        'payment_capture': '1' 
+    # Determine API URL based on Environment
+    if settings.CASHFREE_ENV == 'PRODUCTION':
+        api_url = "https://api.cashfree.com/pg/orders"
+    else:
+        api_url = "https://sandbox.cashfree.com/pg/orders"
+        
+    headers = {
+        "accept": "application/json",
+        "x-api-version": "2023-08-01",
+        "content-type": "application/json",
+        "x-client-id": settings.CASHFREE_APP_ID,
+        "x-client-secret": settings.CASHFREE_SECRET_KEY
     }
     
-    razorpay_order = client.order.create(data=order_data)
-    razorpay_order_id = razorpay_order['id']
+    # Sureshot specific return URL (Cashfree will redirect here after payment)
+    return_url = request.build_absolute_uri(f'/verify-payment/?order_id={order_id}')
     
-    PaymentTransaction.objects.create(
-        user=request.user,
-        amount=40000.00,
-        razorpay_order_id=razorpay_order_id,
-        is_successful=False 
-    )
-    
-    context = {
-        'razorpay_order_id': razorpay_order_id,
-        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
-        'amount': amount_in_paise,
-        'user_email': request.user.email,
-        'user_username': request.user.username,
+    payload = {
+        "customer_details": {
+            "customer_id": f"CUST_{request.user.id}",
+            "customer_email": request.user.email or "aspirant@sureshot.com",
+            "customer_phone": "9999999999", # Replace with actual user phone if collected
+            "customer_name": request.user.username
+        },
+        "order_meta": {
+            "return_url": return_url
+        },
+        "order_id": order_id,
+        "order_amount": 40000.00,
+        "order_currency": "INR"
     }
     
-    return render(request, 'tracker/checkout.html', context)
-
-
-@csrf_exempt
-def verify_payment(request):
-    if request.method == "POST":
-        payment_id = request.POST.get('razorpay_payment_id', '')
-        order_id = request.POST.get('razorpay_order_id', '')
-        signature = request.POST.get('razorpay_signature', '')
-
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-
-        params_dict = {
-            'razorpay_order_id': order_id,
-            'razorpay_payment_id': payment_id,
-            'razorpay_signature': signature
+    # Request Payment Session from Cashfree
+    response = requests.post(api_url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        cf_data = response.json()
+        payment_session_id = cf_data.get('payment_session_id')
+        
+        # Log the pending transaction in the database
+        PaymentTransaction.objects.create(
+            user=request.user,
+            amount=40000.00,
+            cf_order_id=order_id,
+            is_successful=False 
+        )
+        
+        context = {
+            'payment_session_id': payment_session_id,
+            'environment': settings.CASHFREE_ENV.lower(),
         }
+        return render(request, 'tracker/checkout.html', context)
+    else:
+        messages.error(request, "Failed to initialize secure payment gateway. Please try again.")
+        return redirect('/dashboard/')
 
-        try:
-            client.utility.verify_payment_signature(params_dict)
 
-            transaction = PaymentTransaction.objects.get(razorpay_order_id=order_id)
-            transaction.razorpay_payment_id = payment_id
-            transaction.razorpay_signature = signature
+@login_required(login_url='/accounts/login/')
+def verify_payment(request):
+    # Cashfree returns the user here with the order_id in the URL
+    order_id = request.GET.get('order_id')
+    
+    if not order_id:
+        return HttpResponseBadRequest("Invalid Request: Order ID missing.")
+        
+    # Verify the actual status via API to prevent spoofing
+    if settings.CASHFREE_ENV == 'PRODUCTION':
+        api_url = f"https://api.cashfree.com/pg/orders/{order_id}"
+    else:
+        api_url = f"https://sandbox.cashfree.com/pg/orders/{order_id}"
+        
+    headers = {
+        "accept": "application/json",
+        "x-api-version": "2023-08-01",
+        "x-client-id": settings.CASHFREE_APP_ID,
+        "x-client-secret": settings.CASHFREE_SECRET_KEY
+    }
+    
+    response = requests.get(api_url, headers=headers)
+    
+    if response.status_code == 200:
+        order_data = response.json()
+        
+        if order_data.get('order_status') == 'PAID':
+            # 1. Update Transaction Ledger
+            transaction = get_object_or_404(PaymentTransaction, cf_order_id=order_id)
             transaction.is_successful = True
             transaction.save()
 
-            if hasattr(transaction.user, 'aspirantprofile'):
-                profile = transaction.user.aspirantprofile
-                profile.is_active = True 
+            # 2. Unlock the Sureshot Command Tower (Gateway)
+            if hasattr(request.user, 'aspirantprofile'):
+                profile = request.user.aspirantprofile
+                profile.is_refund_eligible = True # Activates the Green Shield
                 profile.save()
+            else:
+                # If they don't have a profile yet, create one
+                AspirantProfile.objects.create(
+                    user=request.user,
+                    is_refund_eligible=True
+                )
 
-            messages.success(request, "Enrollment Complete! Welcome to Sureshot.")
+            messages.success(request, "Enrollment Complete! Accountability Shield Activated.")
             return redirect('/dashboard/')
-
-        except razorpay.errors.SignatureVerificationError:
-            return HttpResponseBadRequest("Security Alert: Cryptographic Signature Verification Failed.")
-        except PaymentTransaction.DoesNotExist:
-            return HttpResponseBadRequest("Transaction record not found in system ledger.")
             
-    return HttpResponseBadRequest("Invalid Request Method.")
-
+        else:
+            messages.error(request, "Payment was not completed. Gateway remains locked.")
+            return redirect('/dashboard/')
+            
+    return HttpResponseBadRequest("Security Alert: Unable to verify transaction with Cashfree.")
 
 # ==========================================
 # 3. ACCOUNTABILITY ENGINE (CRON)

@@ -79,7 +79,11 @@ class LiveSessionAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'amount', 'is_successful', 'created_at', 'razorpay_order_id')
+    list_display = ('user', 'amount', 'order_id', 'is_successful', 'created_at')
     list_filter = ('is_successful', 'created_at')
-    search_fields = ('user__username', 'razorpay_order_id', 'razorpay_payment_id')
     readonly_fields = ('created_at',)
+    search_fields = ('user__username', 'order_id', 'payment_session_id')
+
+# If you use admin.site.register instead of the @admin.register decorator, 
+# make sure your registration line looks like this:
+# admin.site.register(PaymentTransaction, PaymentTransactionAdmin)

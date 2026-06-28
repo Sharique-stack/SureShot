@@ -150,18 +150,16 @@ class LiveSession(models.Model):
         return self.title
 
 class PaymentTransaction(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Amount in INR")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # Razorpay Specific Identifiers
-    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True)
-    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
-    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
+    # Cashfree Architecture
+    order_id = models.CharField(max_length=100, unique=True)
+    cf_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    payment_session_id = models.CharField(max_length=255, blank=True, null=True)
     
-    # Status Tracking
     is_successful = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        status = "Paid" if self.is_successful else "Pending/Failed"
-        return f"{self.user.username} - ₹{self.amount} - {status}"
+        return f"{self.user.username} - {self.order_id} - {'Success' if self.is_successful else 'Pending'}"

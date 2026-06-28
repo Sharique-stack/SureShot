@@ -3,114 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sureshot Elite Cohort - Secure Checkout</title>
+    <title>Sureshot | Secure Payment Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cashfree SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center font-sans antialiased">
+<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen flex flex-col justify-center items-center">
 
-    <div class="max-w-xl w-full mx-4 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-        <!-- Premium Accent Glow -->
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600"></div>
-
-        <!-- Header -->
+    <div class="w-full max-w-md p-8">
         <div class="text-center mb-8">
-            <span class="text-xs font-semibold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20">
-                Govt Drish Premium Access
-            </span>
-            <h1 class="text-3xl font-bold mt-4 tracking-tight">Sureshot Accountability</h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure Enrollment & Compliance Onboarding</p>
+            <h1 class="text-3xl font-black tracking-widest text-white mb-2">SURESHOT</h1>
+            <p class="text-emerald-500 font-mono text-sm tracking-wide">SECURE CHECKOUT</p>
         </div>
 
-        <!-- Details Card -->
-        <div class="bg-slate-950/50 border border-slate-800/80 rounded-xl p-5 mb-6 space-y-4">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
-                <span class="text-slate-400 font-medium">Program Seat Reservation</span>
-                <span class="text-xl font-bold tracking-tight text-white">₹40,000.00</span>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4">Unlock the Command Tower</h2>
+            <div class="flex justify-between items-center py-4 border-y border-zinc-800 mb-6">
+                <span class="text-zinc-400">Refundable Deposit</span>
+                <span class="text-2xl font-black text-white">₹40,000</span>
             </div>
             
-            <!-- Terms Checkmarks -->
-            <ul class="text-xs space-y-2.5 text-slate-400">
-                <li class="flex items-start gap-2.5">
-                    <span class="text-emerald-400 mt-0.5">✔</span>
-                    <span><strong>100% Fee-Refund Assurance</strong> active upon onboarding.</span>
-                </li>
-                <li class="flex items-start gap-2.5">
-                    <span class="text-emerald-400 mt-0.5">✔</span>
-                    <span>Live control tower dashboard metrics activated instantly post-payment.</span>
-                </li>
-                <li class="flex items-start gap-2.5">
-                    <span class="text-indigo-400 mt-0.5">ℹ</span>
-                    <span>Strict compliance terms apply: Refund status relies entirely on consistent dashboard milestone tracking.</span>
-                </li>
-            </ul>
-        </div>
+            <p class="text-xs text-zinc-500 mb-6 leading-relaxed">
+                By initiating this transaction, you agree to the Accountability Contract. 100% of this fee will be refunded if you maintain a Green Shield status through the duration of the program.
+            </p>
 
-        <!-- Secure Notice -->
-        <div class="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-400 mb-8">
-            <span class="text-lg">🔒</span>
-            <p>Payments are securely routed via Razorpay using multi-layer 256-bit encryption. Your transaction ledger ID is generated.</p>
+            <button id="pay-btn" class="w-full bg-white text-black hover:bg-zinc-200 font-bold tracking-wide uppercase py-4 rounded-lg transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                Initialize Secure Payment
+            </button>
         </div>
-
-        <!-- Checkout Action Button -->
-        <button id="rzp-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-4 px-6 rounded-xl transition duration-200 transform active:scale-[0.99] shadow-lg shadow-indigo-600/10 tracking-wide text-center">
-            Complete Secure Payment (₹40,000)
-        </button>
     </div>
 
-    <!-- Razorpay Standard Checkout Script Integration -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
-        var options = {
-            "key": "{{ razorpay_key_id }}", 
-            "amount": "{{ amount }}", 
-            "currency": "INR",
-            "name": "Govt Drish",
-            "description": "Sureshot Premium Cohort Enrollment",
-            "image": "https://govtdrish.com/logo.png", // Optional: Replace with your actual logo later
-            "order_id": "{{ razorpay_order_id }}",
+        // Initialize Cashfree SDK based on environment
+        const cashfree = Cashfree({
+            mode: "{{ environment }}" 
+        });
+
+        document.getElementById("pay-btn").addEventListener("click", () => {
+            let checkoutOptions = {
+                paymentSessionId: "{{ payment_session_id }}",
+                redirectTarget: "_self" // Opens modal on same page
+            };
             
-            // This is the endpoint Razorpay pushes data to upon successful user authorization
-            "handler": function (response){
-    // Dynamically build a form to safely submit tokens to our backend verification route
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/verify-payment/';
-
-    // Inject the required tokens
-    var params = {
-        'razorpay_payment_id': response.razorpay_payment_id,
-        'razorpay_order_id': response.razorpay_order_id,
-        'razorpay_signature': response.razorpay_signature
-    };
-
-    for (var key in params) {
-        if (params.hasOwnProperty(key)) {
-            var hiddenField = document.createElement('input');
-            hiddenField.type = 'hidden';
-            hiddenField.name = key;
-            hiddenField.value = params[key];
-            form.appendChild(hiddenField);
-        }
-    }
-    
-    document.body.appendChild(form);
-    form.submit();
-},
-            "prefill": {
-                "name": "{{ user_username }}",
-                "email": "{{ user_email }}"
-            },
-            "theme": {
-                "color": "#4f46e5" // Sleek Indigo accent theme matching your custom ecosystem
-            }
-        };
-        
-        var rzp1 = new Razorpay(options);
-        
-        document.getElementById('rzp-button').onclick = function(e){
-            rzp1.open();
-            e.preventDefault();
-        }
+            // Launch Cashfree Checkout
+            cashfree.checkout(checkoutOptions);
+        });
     </script>
 </body>
 </html>
