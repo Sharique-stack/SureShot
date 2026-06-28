@@ -111,7 +111,7 @@ def initiate_payment(request):
     order_id = f"SURESHOT_{uuid.uuid4().hex[:10].upper()}"
     
     # Determine API URL based on Environment
-    if settings.CASHFREE_ENV == 'PRODUCTION':
+    if settings.CASHFREE_ENVIRONMENT == 'PRODUCTION':
         api_url = "https://api.cashfree.com/pg/orders"
     else:
         api_url = "https://sandbox.cashfree.com/pg/orders"
@@ -176,7 +176,7 @@ def verify_payment(request):
         return HttpResponseBadRequest("Invalid Request: Order ID missing.")
         
     # Verify the actual status via API to prevent spoofing
-    if settings.CASHFREE_ENV == 'PRODUCTION':
+    if settings.CASHFREE_ENVIRONMENT == 'PRODUCTION':
         api_url = f"https://api.cashfree.com/pg/orders/{order_id}"
     else:
         api_url = f"https://sandbox.cashfree.com/pg/orders/{order_id}"
