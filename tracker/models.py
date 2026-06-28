@@ -149,13 +149,11 @@ class LiveSession(models.Model):
     def __str__(self):
         return self.title
 
-class PaymentTransaction(models.Model):
+class CashfreeTransaction(models.Model): # <--- RENAME THIS
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # Cashfree Architecture
-    # Change to this temporary state to let the migration run
-    order_id = models.CharField(max_length=100, unique=False, null=True, blank=True)
+    order_id = models.CharField(max_length=100, unique=True)
     cf_payment_id = models.CharField(max_length=100, blank=True, null=True)
     payment_session_id = models.CharField(max_length=255, blank=True, null=True)
     
