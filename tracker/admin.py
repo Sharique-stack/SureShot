@@ -6,12 +6,9 @@ from .models import (
     MandatoryExam, 
     Task, 
     TaskSubmission,
-    LiveSession
-
+    LiveSession,
+    CashfreeTransaction
 )
-
-from django.contrib import admin
-from .models import AspirantProfile, LiveSession, Task, MandatoryExam, ComplianceLog, PaymentTransaction
 
 @admin.register(AspirantProfile)
 class AspirantProfileAdmin(admin.ModelAdmin):
@@ -75,15 +72,9 @@ class LiveSessionAdmin(admin.ModelAdmin):
     list_display = ('title', 'scheduled_time', 'is_active')
     list_filter = ('is_active', 'scheduled_time')
 
-
-
-@admin.register(PaymentTransaction)
-class PaymentTransactionAdmin(admin.ModelAdmin):
+@admin.register(CashfreeTransaction)
+class CashfreeTransactionAdmin(admin.ModelAdmin):
     list_display = ('user', 'amount', 'order_id', 'is_successful', 'created_at')
     list_filter = ('is_successful', 'created_at')
     readonly_fields = ('created_at',)
     search_fields = ('user__username', 'order_id', 'payment_session_id')
-
-# If you use admin.site.register instead of the @admin.register decorator, 
-# make sure your registration line looks like this:
-# admin.site.register(PaymentTransaction, PaymentTransactionAdmin)
